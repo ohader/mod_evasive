@@ -105,6 +105,7 @@ static int blocking_period = DEFAULT_BLOCKING_PERIOD;
 static char *email_notify = NULL;
 static char *log_dir = NULL;
 static char *system_command = NULL;
+static char *mailer_command = NULL;
 static const char *whitelist(cmd_parms *cmd, void *dconfig, const char *ip);
 int is_whitelisted(const char *ip);
 
@@ -214,7 +215,7 @@ static int access_checker(request_rec *r)
 
             LOG(LOG_ALERT, "Blacklisting address %s: possible DoS attack.", r->connection->remote_ip);
             if (email_notify != NULL) {
-              snprintf(filename, sizeof(filename), MAILER, email_notify);
+              snprintf(filename, sizeof(filename), mailer_command, email_notify);
               file = popen(filename, "w");
               if (file != NULL) {
                 fprintf(file, "To: %s\n", email_notify);
@@ -644,6 +645,21 @@ get_system_command(cmd_parms *cmd, void *dconfig, const char *value) {
   return NULL;
 } 
 
+static const char *
+get_mailer_command(cmd_parms *cmd, void *dconfig, const char *value) {
+    if (mailer_command != NULL) {
+        free(mailer_command);
+    }
+    
+    if (value != NULL && value[0] != 0) {
+        mailer_command = strdup(value);
+    } else {
+        mailer_command = strdup(MAILER);
+    }
+    
+    return NULL;
+}
+
 /* END Configuration Functions */
 
 static const command_rec access_cmds[] =
@@ -674,6 +690,9 @@ static const command_rec access_cmds[] =
     
     AP_INIT_TAKE1("DOSSystemCommand", get_system_command, NULL, RSRC_CONF,
                   "Set system command on DoS"),
+    
+    AP_INIT_TAKE1("DOSMailerCommand", get_mailer_command, NULL, RSRC_CONF,
+                  "Set mailer command on DoS"),
     
     AP_INIT_ITERATE("DOSWhitelist", whitelist, NULL, RSRC_CONF,
                     "IP-addresses wildcards to whitelist"),

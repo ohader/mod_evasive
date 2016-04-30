@@ -177,6 +177,7 @@ APACHE v2.0
 Optionally you can also add the following directives:
 
     DOSEmailNotify	you@yourdomain.com
+    DOSMailerCommand    "/usr/sbin/sendmail -t"
     DOSSystemCommand	"su - someuser -c '/sbin/... %s ...'"
     DOSLogDir		"/var/lock/mod_evasive"
 
@@ -301,6 +302,13 @@ whenever an IP address becomes blacklisted.  This is designed to enable
 system calls to ip filter or other tools.  A locking mechanism using /tmp
 prevents continuous system calls.  Use %s to denote the IP address of the
 blacklisted IP.
+
+DOSMailerCommand
+----------------
+
+Command to be used for sending out mails. The initial default value is
+set to `/bin/mail -t`, but on more recent systems you might want to use
+`/usr/sbin/sendmail -t` instead.
 
 DOSLogDir
 ---------
