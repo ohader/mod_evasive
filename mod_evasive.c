@@ -651,38 +651,38 @@ int is_whitelisted(const char *ip) {
 }
 
 static command_rec command_table[] = {
-
-        { "DOSWhitelist", whitelist, NULL, RSRC_CONF, ITERATE,
+    
+    { "DOSWhitelist", whitelist, NULL, RSRC_CONF, ITERATE,
         "Whitelist an IP or Wildcard. "},
-
-	{ "DOSHashTableSize", get_hash_tbl_size, NULL, RSRC_CONF, TAKE1,
-	"Set size of hash table. " },
-
-	{ "DOSPageCount", get_page_count, NULL, RSRC_CONF, TAKE1,
-	"Set maximum page hit count per interval. " },
-
-	{ "DOSSiteCount", get_site_count, NULL, RSRC_CONF, TAKE1,
-	"Set maximum site hit count per interval. " },
-
-	{ "DOSPageInterval", get_page_interval, NULL, RSRC_CONF, TAKE1,
-	"Set page interval. " },
-
-	{ "DOSSiteInterval", get_site_interval, NULL, RSRC_CONF, TAKE1,
-	"Set site interval. " }, 
-
-	{ "DOSLogDir", get_log_dir, NULL, RSRC_CONF, TAKE1,
+    
+    { "DOSHashTableSize", get_hash_tbl_size, NULL, RSRC_CONF, TAKE1,
+        "Set size of hash table. " },
+    
+    { "DOSPageCount", get_page_count, NULL, RSRC_CONF, TAKE1,
+        "Set maximum page hit count per interval. " },
+    
+    { "DOSSiteCount", get_site_count, NULL, RSRC_CONF, TAKE1,
+        "Set maximum site hit count per interval. " },
+    
+    { "DOSPageInterval", get_page_interval, NULL, RSRC_CONF, TAKE1,
+        "Set page interval. " },
+    
+    { "DOSSiteInterval", get_site_interval, NULL, RSRC_CONF, TAKE1,
+        "Set site interval. " },
+    
+    { "DOSLogDir", get_log_dir, NULL, RSRC_CONF, TAKE1,
         "Set log dir. "},
-
-	{ "DOSEmailNotify", get_email_notify, NULL, RSRC_CONF, TAKE1,
+    
+    { "DOSEmailNotify", get_email_notify, NULL, RSRC_CONF, TAKE1,
         "Set email notification. "},
-
-	{ "DOSSystemCommand", get_sys_command, NULL, RSRC_CONF, TAKE1,
+    
+    { "DOSSystemCommand", get_sys_command, NULL, RSRC_CONF, TAKE1,
         "Set system command. "},
-
-        { "DOSBlockingPeriod", get_blocking_period, NULL, RSRC_CONF, TAKE1,
+    
+    { "DOSBlockingPeriod", get_blocking_period, NULL, RSRC_CONF, TAKE1,
         "Set blocking period for detected DoS IPs. "},
-
-	{ NULL }
+    
+    { NULL }
 };
 
 module MODULE_VAR_EXPORT evasive_module = {

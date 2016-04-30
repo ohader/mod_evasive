@@ -648,37 +648,37 @@ get_system_command(cmd_parms *cmd, void *dconfig, const char *value) {
 
 static const command_rec access_cmds[] =
 {
-	AP_INIT_TAKE1("DOSHashTableSize", get_hash_tbl_size, NULL, RSRC_CONF, 
-		"Set size of hash table"),
-
-        AP_INIT_TAKE1("DOSPageCount", get_page_count, NULL, RSRC_CONF,
-		"Set maximum page hit count per interval"),
-
-        AP_INIT_TAKE1("DOSSiteCount", get_site_count, NULL, RSRC_CONF,
-		"Set maximum site hit count per interval"),
-
-        AP_INIT_TAKE1("DOSPageInterval", get_page_interval, NULL, RSRC_CONF,
-		"Set page interval"),
-
-	AP_INIT_TAKE1("DOSSiteInterval", get_site_interval, NULL, RSRC_CONF,
-		"Set site interval"),
-
-        AP_INIT_TAKE1("DOSBlockingPeriod", get_blocking_period, NULL, RSRC_CONF,
-		"Set blocking period for detected DoS IPs"),
-
-	AP_INIT_TAKE1("DOSEmailNotify", get_email_notify, NULL, RSRC_CONF,
-		"Set email notification"),
-
-	AP_INIT_TAKE1("DOSLogDir", get_log_dir, NULL, RSRC_CONF,
-		"Set log dir"),
-
-	AP_INIT_TAKE1("DOSSystemCommand", get_system_command, NULL, RSRC_CONF,
-		"Set system command on DoS"),
-
-        AP_INIT_ITERATE("DOSWhitelist", whitelist, NULL, RSRC_CONF,
-                "IP-addresses wildcards to whitelist"),
-
-	{ NULL }
+    AP_INIT_TAKE1("DOSHashTableSize", get_hash_tbl_size, NULL, RSRC_CONF,
+                  "Set size of hash table"),
+    
+    AP_INIT_TAKE1("DOSPageCount", get_page_count, NULL, RSRC_CONF,
+                  "Set maximum page hit count per interval"),
+    
+    AP_INIT_TAKE1("DOSSiteCount", get_site_count, NULL, RSRC_CONF,
+                  "Set maximum site hit count per interval"),
+    
+    AP_INIT_TAKE1("DOSPageInterval", get_page_interval, NULL, RSRC_CONF,
+                  "Set page interval"),
+    
+    AP_INIT_TAKE1("DOSSiteInterval", get_site_interval, NULL, RSRC_CONF,
+                  "Set site interval"),
+    
+    AP_INIT_TAKE1("DOSBlockingPeriod", get_blocking_period, NULL, RSRC_CONF,
+                  "Set blocking period for detected DoS IPs"),
+    
+    AP_INIT_TAKE1("DOSEmailNotify", get_email_notify, NULL, RSRC_CONF,
+                  "Set email notification"),
+    
+    AP_INIT_TAKE1("DOSLogDir", get_log_dir, NULL, RSRC_CONF,
+                  "Set log dir"),
+    
+    AP_INIT_TAKE1("DOSSystemCommand", get_system_command, NULL, RSRC_CONF,
+                  "Set system command on DoS"),
+    
+    AP_INIT_ITERATE("DOSWhitelist", whitelist, NULL, RSRC_CONF,
+                    "IP-addresses wildcards to whitelist"),
+    
+    { NULL }
 };
 
 static void register_hooks(apr_pool_t *p) {
