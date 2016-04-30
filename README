@@ -156,8 +156,10 @@ APACHE v1.3
 
 <IfModule mod_evasive.c>
     DOSHashTableSize    3097
+    DOSUriCount         2
     DOSPageCount        2
     DOSSiteCount        50
+    DOSUriInterval      1
     DOSPageInterval     1
     DOSSiteInterval     1
     DOSBlockingPeriod   10
@@ -167,8 +169,10 @@ APACHE v2.0
 -----------
 <IfModule mod_evasive20.c>
     DOSHashTableSize    3097
+    DOSUriCount         2
     DOSPageCount        2
     DOSSiteCount        50
+    DOSUriInterval      1
     DOSPageInterval     1
     DOSSiteInterval     1
     DOSBlockingPeriod   10
@@ -235,6 +239,37 @@ Or an own object
 NameTrans fn=mod_evasive_check
 </Object>
 
+
+Explaining configuration settings
+---------------------------------
+
+Since the wording on configuration settings is not optimal, this section tries
+to explain some aspects.
+
+* `DOSLogDir` is actually used to write lock files (instead of just logging)
+  in the format `dos-<any-ip-address>`
+* `DOSUri*` has been added in a form and considers the whole URI string including
+  all possible query arguments, thus this is the most unique request. The following
+  URIs are all considered to be different:
+   + `/path/index.php?action=a`
+   + `/path/index.php?action=b`
+   + '/path/index.php?status=1`
+* `DOSPage*` is similar to `DOSUri*` but acts on the page resource (file path) only.
+  This leads to the fact, that the following requests are all considered to be the
+  same, since `/path/index.php` is the extracted key - query arguments are ignored:
+   + `/path/index.php?action=a`
+   + `/path/index.php?action=b`
+   + '/path/index.php?status=1`
+* `DOSSite*` is related to the whole server (not the website or domain name). This
+  settings is for any resource that is served by your Apache webserver. Low values
+  might get problematic if (valid) crawlers scan different domain names of your
+  webserver at the same time. Thus, the following requests are considered to be the
+  same in terms of counting requests for one client IP address:
+   + `//domain.com/index.php`
+   + `//domain.com/index.php?action=a`
+   + `//anything.net/some/file/image.png`
+   + `//sub.domain.org/home.html`
+
 DOSHashTableSize
 ----------------
 
@@ -246,12 +281,21 @@ a busy web server.  The value you specify will automatically be tiered up to
 the next prime number in the primes list (see mod_evasive.c for a list 
 of primes used).
 
+DOSUriCount
+-----------
+
+This is the threshhold for the number of requests for the same URI (including
+additional query arguments) per URI interval. Once the threshhold for that
+interval has been exceeded, the IP address of the client will be added to the
+blocking list.
+
 DOSPageCount
 ------------
 
-This is the threshhold for the number of requests for the same page (or URI)
-per page interval.  Once the threshhold for that interval has been exceeded,
-the IP address of the client will be added to the blocking list.
+This is the threshhold for the number of requests for the same page (without any
+additional query arguments) per page interval. Once the threshhold for that
+interval has been exceeded, the IP address of the client will be added to the
+blocking list.
  
 DOSSiteCount
 ------------
@@ -260,6 +304,11 @@ This is the threshhold for the total number of requests for any object by
 the same client on the same listener per site interval.  Once the threshhold 
 for that interval has been exceeded, the IP address of the client will be added
 to the blocking list.
+
+DOSUriInterval
+---------------
+
+The interval for the URI count threshhold; defaults to 1 second intervals.
 
 DOSPageInterval
 ---------------

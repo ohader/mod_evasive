@@ -46,8 +46,10 @@ module AP_MODULE_DECLARE_DATA evasive20_module;
 #define  LOG( A, ... ) { openlog("mod_evasive", LOG_PID, LOG_DAEMON); syslog( A, __VA_ARGS__ ); closelog(); }
 
 #define DEFAULT_HASH_TBL_SIZE   3097ul  // Default hash table size
+#define DEFAULT_URI_COUNT       2       // Default maximum URI hit count per interval
 #define DEFAULT_PAGE_COUNT      2       // Default maximum page hit count per interval
 #define DEFAULT_SITE_COUNT      50      // Default maximum site hit count per interval
+#define DEFAULT_URI_INTERVAL    1       // Default 1 Second URI interval
 #define DEFAULT_PAGE_INTERVAL   1       // Default 1 Second page interval
 #define DEFAULT_SITE_INTERVAL   1       // Default 1 Second site interval
 #define DEFAULT_BLOCKING_PERIOD 10      // Default for Detected IPs; blocked for 10 seconds
@@ -97,6 +99,8 @@ struct ntt_node *c_ntt_next(struct ntt *ntt, struct ntt_c *c);
 struct ntt *hit_list;	// Our dynamic hash table
 
 static unsigned long hash_table_size = DEFAULT_HASH_TBL_SIZE;
+static int uri_count = DEFAULT_URI_COUNT;
+static int uri_interval = DEFAULT_URI_INTERVAL;
 static int page_count = DEFAULT_PAGE_COUNT;
 static int page_interval = DEFAULT_PAGE_INTERVAL;
 static int site_count = DEFAULT_SITE_COUNT;
@@ -155,12 +159,34 @@ static int access_checker(request_rec *r)
       /* Not on hold, check hit stats */
       } else {
 
-        /* Has URI been hit too much? */
+          /* Has URI (incluiding query arguments) been hit too much? */
+          snprintf(hash_key, 2048, "%s_%s_%s", r->connection->remote_ip, r->uri, r->args);
+          n = ntt_find(hit_list, hash_key);
+          if (n != NULL) {
+              
+              /* If URI is being hit too much, add to "hold" list and 403 */
+              if (t - n->timestamp < uri_interval && n->count >= uri_count) {
+                  ret = HTTP_FORBIDDEN;
+                  ntt_insert(hit_list, r->connection->remote_ip, time(NULL));
+              } else {
+                  
+                  /* Reset our hit count list as necessary */
+                  if (t - n->timestamp >= uri_interval) {
+                      n->count = 0;
+                  }
+              }
+              n->timestamp = t;
+              n->count++;
+          } else {
+              ntt_insert(hit_list, hash_key, t);
+          }
+
+        /* Has page resource been hit too much? */
         snprintf(hash_key, 2048, "%s_%s", r->connection->remote_ip, r->uri);
         n = ntt_find(hit_list, hash_key);
         if (n != NULL) {
 
-          /* If URI is being hit too much, add to "hold" list and 403 */
+          /* If page resource is being hit too much, add to "hold" list and 403 */
           if (t-n->timestamp<page_interval && n->count>=page_count) {
             ret = HTTP_FORBIDDEN;
             ntt_insert(hit_list, r->connection->remote_ip, time(NULL));
@@ -553,6 +579,18 @@ get_hash_tbl_size(cmd_parms *cmd, void *dconfig, const char *value) {
 }
 
 static const char *
+get_uri_count(cmd_parms *cmd, void *dconfig, const char *value) {
+    long n = strtol(value, NULL, 0);
+    if (n<=0) {
+        uri_count = DEFAULT_URI_COUNT;
+    } else {
+        uri_count = n;
+    }
+    
+    return NULL;
+}
+
+static const char *
 get_page_count(cmd_parms *cmd, void *dconfig, const char *value) {
   long n = strtol(value, NULL, 0);
   if (n<=0) {
@@ -574,6 +612,18 @@ get_site_count(cmd_parms *cmd, void *dconfig, const char *value) {
   }
 
   return NULL;
+}
+
+static const char *
+get_uri_interval(cmd_parms *cmd, void *dconfig, const char *value) {
+    long n = strtol(value, NULL, 0);
+    if (n<=0) {
+        uri_interval = DEFAULT_URI_INTERVAL;
+    } else {
+        uri_interval = n;
+    }
+    
+    return NULL;
 }
 
 static const char *
@@ -667,12 +717,18 @@ static const command_rec access_cmds[] =
     AP_INIT_TAKE1("DOSHashTableSize", get_hash_tbl_size, NULL, RSRC_CONF,
                   "Set size of hash table"),
     
+    AP_INIT_TAKE1("DOSUriCount", get_uri_count, NULL, RSRC_CONF,
+                  "Set maximum URI hit count per interval"),
+    
     AP_INIT_TAKE1("DOSPageCount", get_page_count, NULL, RSRC_CONF,
                   "Set maximum page hit count per interval"),
     
     AP_INIT_TAKE1("DOSSiteCount", get_site_count, NULL, RSRC_CONF,
                   "Set maximum site hit count per interval"),
     
+    AP_INIT_TAKE1("DOSUriInterval", get_uri_interval, NULL, RSRC_CONF,
+                  "Set URI interval"),
+
     AP_INIT_TAKE1("DOSPageInterval", get_page_interval, NULL, RSRC_CONF,
                   "Set page interval"),
     

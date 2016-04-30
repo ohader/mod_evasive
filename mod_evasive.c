@@ -48,8 +48,10 @@ module MODULE_VAR_EXPORT evasive_module;
 #define  LOG( A, ... ) { openlog("mod_evasive", LOG_PID, LOG_DAEMON); syslog( A, __VA_ARGS__ ); closelog(); }
 
 #define DEFAULT_HASH_TBL_SIZE   3079ul  // Default hash table size
+#define DEFAULT_URI_COUNT       2       // Default max URI hit count/interval
 #define DEFAULT_PAGE_COUNT      2       // Default max page hit count/interval
 #define DEFAULT_SITE_COUNT      50      // Default max site hit count/interval
+#define DEFAULT_URI_INTERVAL    1       // Default 1 second URI interval
 #define DEFAULT_PAGE_INTERVAL   1       // Default 1 second page interval
 #define DEFAULT_SITE_INTERVAL   1       // Default 1 second site interval
 #define DEFAULT_BLOCKING_PERIOD 10      // Default block time (Seconds)
@@ -100,6 +102,8 @@ struct ntt *hit_list;	// Our dynamic hash table
 struct ntt *white_list = NULL; // White list table
 
 static unsigned long hash_table_size = DEFAULT_HASH_TBL_SIZE;
+static int uri_count       = DEFAULT_URI_COUNT;
+static int uri_interval    = DEFAULT_URI_INTERVAL;
 static int page_count      = DEFAULT_PAGE_COUNT;
 static int page_interval   = DEFAULT_PAGE_INTERVAL;
 static int site_count      = DEFAULT_SITE_COUNT;
@@ -150,12 +154,35 @@ static int check_access(request_rec *r)
       /* Not on hold, check hit stats */
       } else {
 
-        /* Has URI been hit too much? */
+          /* Has URI (incluiding query arguments) been hit too much? */
+          snprintf(hash_key, 2048, "%ld_%s_%s", address, r->uri, r->args);
+          n = ntt_find(hit_list, hash_key);
+          if (n != NULL) {
+              
+              /* If URI is being hit too much, add to "hold" list and 403 */
+              if (t - n->timestamp < uri_interval && n->count >= uri_count) {
+                  ret = FORBIDDEN;
+                  snprintf(hash_key, 2048, "%ld", address);
+                  ntt_insert(hit_list, hash_key, time(NULL));
+              } else {
+                  
+                  /* Reset our hit count list as necessary */
+                  if (t - n->timestamp >= uri_interval) {
+                      n->count = 0;
+                  }
+              }
+              n->timestamp = t;
+              n->count++;
+          } else {
+              ntt_insert(hit_list, hash_key, t);
+          }
+
+        /* Has page resource been hit too much? */
         snprintf(hash_key, 2048, "%ld_%s", address, r->uri);
         n = ntt_find(hit_list, hash_key);
         if (n != NULL) {
 
-          /* If URI is being hit too much, add to "hold" list and 403 */
+          /* If page resource is being hit too much, add to "hold" list and 403 */
           if (t-n->timestamp<page_interval && n->count>=page_count) {
             ret = FORBIDDEN;
             snprintf(hash_key, 2048, "%ld", address);
@@ -506,6 +533,17 @@ get_hash_tbl_size(cmd_parms *cmd, void *dconfig, char *value) {
 }
 
 static const char *
+get_uri_count(cmd_parms *cmd, void *dconfig, char *value) {
+    long n = strtol(value, NULL, 0);
+    if (n<=0)
+        uri_count = DEFAULT_URI_COUNT;
+    else
+        uri_count = n;
+    
+    return NULL;
+}
+
+static const char *
 get_page_count(cmd_parms *cmd, void *dconfig, char *value) {
     long n = strtol(value, NULL, 0);
     if (n<=0) 
@@ -524,6 +562,17 @@ get_site_count(cmd_parms *cmd, void *dconfig, char *value) {
     else
         site_count = n;
 
+    return NULL;
+}
+
+static const char *
+get_uri_interval(cmd_parms *cmd, void *dconfig, char *value) {
+    long n = strtol(value, NULL, 0);
+    if (n<=0)
+        uri_interval = DEFAULT_URI_INTERVAL;
+    else
+        uri_interval = n;
+    
     return NULL;
 }
 
@@ -674,12 +723,18 @@ static command_rec command_table[] = {
     { "DOSHashTableSize", get_hash_tbl_size, NULL, RSRC_CONF, TAKE1,
         "Set size of hash table. " },
     
+    { "DOSUriCount", get_uri_count, NULL, RSRC_CONF, TAKE1,
+        "Set maximum URI hit count per interval. " },
+
     { "DOSPageCount", get_page_count, NULL, RSRC_CONF, TAKE1,
         "Set maximum page hit count per interval. " },
     
     { "DOSSiteCount", get_site_count, NULL, RSRC_CONF, TAKE1,
         "Set maximum site hit count per interval. " },
     
+    { "DOSUriInterval", get_uri_interval, NULL, RSRC_CONF, TAKE1,
+        "Set URI interval. " },
+
     { "DOSPageInterval", get_page_interval, NULL, RSRC_CONF, TAKE1,
         "Set page interval. " },
     
