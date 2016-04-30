@@ -1,0 +1,20 @@
+Source: libapache-mod-evasive
+Section: web
+Priority: optional
+Maintainer: Alberto Gonzalez Iniesta <agi@inittab.org>
+Build-Depends: debhelper (>> 4.0.0), apache2-threaded-dev
+Standards-Version: 3.7.2.2
+
+Package: libapache2-mod-evasive
+Architecture: any
+Depends: apache2.2-common, ${shlibs:Depends}
+Description: evasive module to minimize HTTP DoS or brute force attacks
+ mod_evasive is an evasive maneuvers module for Apache to provide some
+ protection in the event of an HTTP DoS or DDoS attack or brute force attack.
+ .
+ It is also designed to be a detection tool, and can be easily configured to
+ talk to ipchains, firewalls, routers, and etcetera.
+ .
+ This module only works on Apache 2.x servers
+
+

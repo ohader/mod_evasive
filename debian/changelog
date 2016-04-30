@@ -1,0 +1,17 @@
+libapache-mod-evasive (1.10.1-1) unstable; urgency=low
+
+  * New upstream version. Changed package name. s/dos//
+  * Lenny: Built module for Apache 2.x only.
+  * Removed mod_evasiveNSAPI.c, since it's still non-free.
+
+ -- Alberto Gonzalez Iniesta <agi@inittab.org>  Wed, 27 Jun 2007 15:47:47 +0200
+
+libapache-mod-dosevasive (1.10-1) unstable; urgency=low
+
+  * Initial release (Closes: #302002)
+  * Removed non-free mod_dosevasiveNSAPI.c from upstream source.
+    Thanks Joerg Jaspert for noticing this.
+    Upstream contacted, and file will be re-licensed under GPL 
+    next time.
+
+ -- Alberto Gonzalez Iniesta <agi@inittab.org>  Thu, 13 Oct 2005 17:35:15 +0200
