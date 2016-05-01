@@ -247,7 +247,11 @@ static int access_checker(request_rec *r)
               if (file != NULL) {
                 fprintf(file, "To: %s\n", email_notify);
                 fprintf(file, "Subject: HTTP BLACKLIST %s\n\n", r->connection->client_ip);
-                fprintf(file, "mod_evasive HTTP Blacklisted %s\n", r->connection->client_ip);
+                fprintf(file, "The following request has been forbidden\n");
+                fprintf(file, "by mod_evasive on server %s:\n\n", r->connection->local_ip);
+                fprintf(file, "Client IP:   %s\n", r->connection->client_ip);
+                fprintf(file, "Server Host: %s\n", r->hostname);
+                fprintf(file, "Server URI:  %s\n", r->unparsed_uri);
                 pclose(file);
               }
             }
