@@ -171,7 +171,7 @@ static int access_checker(request_rec *r)
       } else {
 
           /* Has URI (incluiding query arguments) been hit too much? */
-          snprintf(hash_key, 2048, "%s_%s_%s", r->connection->client_ip, r->uri, r->args);
+          snprintf(hash_key, 2048, "%s_%s_%s_%s", r->connection->client_ip, r->hostname, r->uri, r->args);
           n = ntt_find(hit_list, hash_key);
           if (n != NULL) {
               
@@ -196,7 +196,7 @@ static int access_checker(request_rec *r)
           }
 
         /* Has page resource been hit too much? */
-        snprintf(hash_key, 2048, "%s_%s", r->connection->client_ip, r->uri);
+        snprintf(hash_key, 2048, "%s_%s_%s", r->connection->client_ip, r->hostname, r->uri);
         n = ntt_find(hit_list, hash_key);
         if (n != NULL) {
 
