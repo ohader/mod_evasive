@@ -62,6 +62,13 @@ module AP_MODULE_DECLARE_DATA evasive24_module;
 
 enum { ntt_num_primes = 28 };
 
+static char *reasons[4] = {
+    "unknown",
+    "URI",
+    "PAGE",
+    "SITE"
+};
+
 /* ntt root tree */
 struct ntt {
     long size;
@@ -72,6 +79,7 @@ struct ntt {
 /* ntt node (entry in the ntt root tree) */
 struct ntt_node {
     char *key;
+    int reason;
     time_t timestamp;
     long count;
     struct ntt_node *next;
@@ -86,7 +94,7 @@ struct ntt_c {
 struct ntt *ntt_create(long size);
 int ntt_destroy(struct ntt *ntt);
 struct ntt_node	*ntt_find(struct ntt *ntt, const char *key);
-struct ntt_node	*ntt_insert(struct ntt *ntt, const char *key, time_t timestamp);
+struct ntt_node	*ntt_insert(struct ntt *ntt, const char *key, time_t timestamp, int reason);
 int ntt_delete(struct ntt *ntt, const char *key);
 long ntt_hashcode(struct ntt *ntt, const char *key);	
 struct ntt_node *c_ntt_first(struct ntt *ntt, struct ntt_c *c);
@@ -127,7 +135,7 @@ static const char *whitelist(cmd_parms *cmd, void *dconfig, const char *ip)
 {
   char entry[128];
   snprintf(entry, sizeof(entry), "WHITELIST_%s", ip);
-  ntt_insert(hit_list, entry, time(NULL));
+  ntt_insert(hit_list, entry, time(NULL), 0);
   
   return NULL;
 }
@@ -136,6 +144,7 @@ static const char *whitelist(cmd_parms *cmd, void *dconfig, const char *ip)
 static int access_checker(request_rec *r) 
 {
     int ret = OK;
+    int reason = 0;
 
     /* BEGIN DoS Evasive Maneuvers Code */
 
@@ -156,6 +165,7 @@ static int access_checker(request_rec *r)
         /* If the IP is on "hold", make it wait longer in 403 land */
         ret = HTTP_FORBIDDEN;
         n->timestamp = time(NULL);
+        reason = n->reason;
 
       /* Not on hold, check hit stats */
       } else {
@@ -167,8 +177,9 @@ static int access_checker(request_rec *r)
               
               /* If URI is being hit too much, add to "hold" list and 403 */
               if (t - n->timestamp < uri_interval && n->count >= uri_count) {
+                  reason = 1;
                   ret = HTTP_FORBIDDEN;
-                  ntt_insert(hit_list, r->connection->client_ip, time(NULL));
+                  ntt_insert(hit_list, r->connection->client_ip, time(NULL), reason);
               } else {
                   
                   /* Reset our hit count list as necessary */
@@ -179,7 +190,7 @@ static int access_checker(request_rec *r)
               n->timestamp = t;
               n->count++;
           } else {
-              ntt_insert(hit_list, hash_key, t);
+              ntt_insert(hit_list, hash_key, t, 0);
           }
 
         /* Has page resource been hit too much? */
@@ -189,8 +200,9 @@ static int access_checker(request_rec *r)
 
           /* If page resource is being hit too much, add to "hold" list and 403 */
           if (t-n->timestamp<page_interval && n->count>=page_count) {
+            reason = 2;
             ret = HTTP_FORBIDDEN;
-            ntt_insert(hit_list, r->connection->client_ip, time(NULL));
+            ntt_insert(hit_list, r->connection->client_ip, time(NULL), reason);
           } else {
 
             /* Reset our hit count list as necessary */
@@ -201,7 +213,7 @@ static int access_checker(request_rec *r)
           n->timestamp = t;
           n->count++;
         } else {
-          ntt_insert(hit_list, hash_key, t);
+          ntt_insert(hit_list, hash_key, t, 0);
         }
 
         /* Has site been hit too much? */
@@ -211,8 +223,9 @@ static int access_checker(request_rec *r)
 
           /* If site is being hit too much, add to "hold" list and 403 */
           if (t-n->timestamp<site_interval && n->count>=site_count) {
+            reason = 3;
             ret = HTTP_FORBIDDEN;
-            ntt_insert(hit_list, r->connection->client_ip, time(NULL));
+            ntt_insert(hit_list, r->connection->client_ip, time(NULL), reason);
           } else {
 
             /* Reset our hit count list as necessary */
@@ -223,7 +236,7 @@ static int access_checker(request_rec *r)
           n->timestamp = t;
           n->count++;
         } else {
-          ntt_insert(hit_list, hash_key, t);
+          ntt_insert(hit_list, hash_key, t, 0);
         }
       }
 
@@ -249,6 +262,7 @@ static int access_checker(request_rec *r)
                 fprintf(file, "Subject: HTTP BLACKLIST %s\n\n", r->connection->client_ip);
                 fprintf(file, "The following request has been forbidden\n");
                 fprintf(file, "by mod_evasive on server %s:\n\n", r->connection->local_ip);
+                fprintf(file, "Reason:      %s\n", reasons[reason]);
                 fprintf(file, "Client IP:   %s\n", r->connection->client_ip);
                 fprintf(file, "Server Host: %s\n", r->hostname);
                 fprintf(file, "Server URI:  %s\n", r->unparsed_uri);
@@ -276,8 +290,8 @@ static int access_checker(request_rec *r)
     if (ret == HTTP_FORBIDDEN
 	&& (ap_satisfies(r) != SATISFY_ANY || !ap_some_auth_required(r))) {
         ap_log_rerror(APLOG_MARK, APLOG_ERR, 0, r,
-            "client denied by server configuration: %s",
-            r->filename);
+            "client denied by server configuration: %s (reason: %s)",
+            r->filename, reasons[reason]);
     }
 
     return ret;
@@ -369,6 +383,7 @@ struct ntt_node *ntt_node_create(const char *key) {
 	return NULL;
     }
     node->key = node_key;
+    node->reason = 0;
     node->timestamp = time(NULL);
     node->next = NULL;
     return(node);
@@ -415,7 +430,7 @@ struct ntt_node *ntt_find(struct ntt *ntt, const char *key) {
 
 /* Insert a node into the tree */
 
-struct ntt_node *ntt_insert(struct ntt *ntt, const char *key, time_t timestamp) {
+struct ntt_node *ntt_insert(struct ntt *ntt, const char *key, time_t timestamp, int reason) {
     long hash_code;
     struct ntt_node *parent;
     struct ntt_node *node;
@@ -441,6 +456,7 @@ struct ntt_node *ntt_insert(struct ntt *ntt, const char *key, time_t timestamp) 
 
     if (new_node != NULL) {
         new_node->timestamp = timestamp;
+        new_node->reason = reason;
         new_node->count = 0;
         return new_node; 
     }
@@ -448,6 +464,7 @@ struct ntt_node *ntt_insert(struct ntt *ntt, const char *key, time_t timestamp) 
     /* Create a new node */
     new_node = ntt_node_create(key);
     new_node->timestamp = timestamp;
+    new_node->reason = reason;
     new_node->timestamp = 0;
 
     ntt->items++;
