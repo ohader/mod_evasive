@@ -181,7 +181,7 @@ APACHE v2.0
 Optionally you can also add the following directives:
 
     DOSEmailNotify	you@yourdomain.com
-    DOSMailerCommand    "/usr/sbin/sendmail -t"
+    DOSMailerCommand    "/usr/sbin/sendmail -t %s"
     DOSSystemCommand	"su - someuser -c '/sbin/... %s ...'"
     DOSLogDir		"/var/lock/mod_evasive"
 
