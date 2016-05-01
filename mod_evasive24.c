@@ -188,7 +188,9 @@ static int access_checker(request_rec *r)
                   }
               }
               n->timestamp = t;
-              n->count++;
+              if (!r->chunked) {
+                  n->count++;
+              }
           } else {
               ntt_insert(hit_list, hash_key, t, 0);
           }
@@ -211,7 +213,9 @@ static int access_checker(request_rec *r)
             }
           }
           n->timestamp = t;
-          n->count++;
+          if (!r->chunked) {
+              n->count++;
+          }
         } else {
           ntt_insert(hit_list, hash_key, t, 0);
         }
