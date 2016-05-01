@@ -31,6 +31,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <time.h>
 #include <syslog.h>
 #include <errno.h>
+#include <unistd.h>
 
 #include "httpd.h"
 #include "http_core.h"
@@ -236,7 +237,7 @@ static int access_checker(request_rec *r)
         if (stat(filename, &s)) {
           file = fopen(filename, "w");
           if (file != NULL) {
-            fprintf(file, "%ld\n", getpid());
+            fprintf(file, "%d\n", getpid());
             fclose(file);
 
             LOG(LOG_ALERT, "Blacklisting address %s: possible DoS attack.", r->connection->client_ip);
