@@ -114,6 +114,7 @@ static char *email_notify  = NULL;
 static char *sys_command   = NULL;
 static char *mailer_command   = NULL;
 int is_whitelisted(const char *ip);
+int has_request_header(request_rec* request, const char* header_name);
 static const char *whitelist(cmd_parms *cmd, void *mconfig, char *ip);
 
 /* END DoS Evasive Maneuvers Globals */
@@ -172,7 +173,9 @@ static int check_access(request_rec *r)
                   }
               }
               n->timestamp = t;
-              n->count++;
+              if (!has_request_header(r, "Range")) {
+                  n->count++;
+              }
           } else {
               ntt_insert(hit_list, hash_key, t);
           }
@@ -195,7 +198,9 @@ static int check_access(request_rec *r)
             }
           }
           n->timestamp = t;
-          n->count++;
+          if (!has_request_header(r, "Range")) {
+              n->count++;
+          }
         } else {
           ntt_insert(hit_list, hash_key, t);
         }
@@ -713,6 +718,27 @@ int is_whitelisted(const char *ip) {
 
     /* No match */
     return 0;
+}
+
+int has_request_header(request_rec *request, const char *header_name) {
+    int i, result;
+    const apr_array_header_t *fields;
+    apr_table_entry_t *entries = 0;
+
+    result = 0;
+
+    fields = apr_table_elts(request->headers_in);
+    entries = (apr_table_entry_t *) fields->elts;
+    for(i = 0; i < fields->nelts; i++) {
+        if (strcmp(entries[i].key, header_name) == 0) {
+            if (strlen(entries[i].val) > 0) {
+                result = 1;
+                break;
+            }
+        }
+    }
+
+    return result;
 }
 
 static command_rec command_table[] = {

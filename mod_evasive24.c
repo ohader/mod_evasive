@@ -121,6 +121,7 @@ static char *system_command = NULL;
 static char *mailer_command = NULL;
 static const char *whitelist(cmd_parms *cmd, void *dconfig, const char *ip);
 int is_whitelisted(const char *ip);
+int has_request_header(request_rec *request, const char* header_name);
 
 /* END DoS Evasive Maneuvers Globals */
 
@@ -188,7 +189,7 @@ static int access_checker(request_rec *r)
                   }
               }
               n->timestamp = t;
-              if (!r->chunked) {
+              if (!has_request_header(r, "Range")) {
                   n->count++;
               }
           } else {
@@ -213,7 +214,7 @@ static int access_checker(request_rec *r)
             }
           }
           n->timestamp = t;
-          if (!r->chunked) {
+          if (!has_request_header(r, "Range")) {
               n->count++;
           }
         } else {
@@ -299,6 +300,27 @@ static int access_checker(request_rec *r)
     }
 
     return ret;
+}
+
+int has_request_header(request_rec *request, const char *header_name) {
+    int i, result;
+    const apr_array_header_t *fields;
+    apr_table_entry_t *entries = 0;
+
+    result = 0;
+
+    fields = apr_table_elts(request->headers_in);
+    entries = (apr_table_entry_t *) fields->elts;
+    for(i = 0; i < fields->nelts; i++) {
+        if (strcmp(entries[i].key, header_name) == 0) {
+            if (strlen(entries[i].val) > 0) {
+                result = 1;
+                break;
+            }
+        }
+    }
+
+    return result;
 }
 
 int is_whitelisted(const char *ip) {
