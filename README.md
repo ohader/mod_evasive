@@ -1,3 +1,11 @@
+# Disclaimer
+
+This is a fork of the Apache module mod_evasive, based on version 1.10.1 of that project.
+
+**This fork is NOT actively maintained! Use it at your own risk...** 
+
+# Contents of original `README` file
+
 Apache Evasive Maneuvers Module
 For Apache 1.3 and 2.0
 Copyright (c) Deep Logic, Inc.
