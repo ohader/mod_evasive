@@ -164,7 +164,7 @@ static int access_checker(request_rec *r)
       if (n != NULL && t-n->timestamp<blocking_period) {
  
         /* If the IP is on "hold", make it wait longer in 403 land */
-        ret = HTTP_FORBIDDEN;
+        ret = HTTP_TOO_MANY_REQUESTS;
         n->timestamp = time(NULL);
         reason = n->reason;
 
@@ -179,7 +179,7 @@ static int access_checker(request_rec *r)
               /* If URI is being hit too much, add to "hold" list and 403 */
               if (t - n->timestamp < uri_interval && n->count >= uri_count) {
                   reason = 1;
-                  ret = HTTP_FORBIDDEN;
+                  ret = HTTP_TOO_MANY_REQUESTS;
                   ntt_insert(hit_list, r->connection->client_ip, time(NULL), reason);
               } else {
                   
@@ -204,7 +204,7 @@ static int access_checker(request_rec *r)
           /* If page resource is being hit too much, add to "hold" list and 403 */
           if (t-n->timestamp<page_interval && n->count>=page_count) {
             reason = 2;
-            ret = HTTP_FORBIDDEN;
+            ret = HTTP_TOO_MANY_REQUESTS;
             ntt_insert(hit_list, r->connection->client_ip, time(NULL), reason);
           } else {
 
@@ -229,7 +229,7 @@ static int access_checker(request_rec *r)
           /* If site is being hit too much, add to "hold" list and 403 */
           if (t-n->timestamp<site_interval && n->count>=site_count) {
             reason = 3;
-            ret = HTTP_FORBIDDEN;
+            ret = HTTP_TOO_MANY_REQUESTS;
             ntt_insert(hit_list, r->connection->client_ip, time(NULL), reason);
           } else {
 
@@ -246,7 +246,7 @@ static int access_checker(request_rec *r)
       }
 
       /* Perform email notification and system functions */
-      if (ret == HTTP_FORBIDDEN) {
+      if (ret == HTTP_TOO_MANY_REQUESTS) {
         char filename[1024];
         struct stat s;
         FILE *file;
@@ -286,13 +286,13 @@ static int access_checker(request_rec *r)
 
         } /* if (temp file does not exist) */
 
-      } /* if (ret == HTTP_FORBIDDEN) */
+      } /* if (ret == HTTP_TOO_MANY_REQUESTS) */
 
     } /* if (r->prev == NULL && r->main == NULL && hit_list != NULL) */
 
     /* END DoS Evasive Maneuvers Code */
 
-    if (ret == HTTP_FORBIDDEN
+    if (ret == HTTP_TOO_MANY_REQUESTS
 	&& (ap_satisfies(r) != SATISFY_ANY || !ap_some_auth_required(r))) {
         ap_log_rerror(APLOG_MARK, APLOG_ERR, 0, r,
             "client denied by server configuration: %s (reason: %s)",
